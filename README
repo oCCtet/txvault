@@ -1,13 +1,13 @@
 Who do you trust to hold your passwords?
 
-Modern life relies on a multitude of on-line services. It is a
-recommended practise to use a different user name, or at least a
-different password for each service. Remembering all these becomes
-a burden pretty fast.
+Modern life relies on a multitude of on-line services. A recommended
+practise is to use a different user name, or at least a different
+password for each service. Remembering all these becomes a burden pretty
+fast.
 
-Writing them down to a text file is an easy solution, but also
-compromises the security. To solve this, I wrote this little script
-to store such a text file in a secure manner.
+Writing them down to a text file is an easy solution, but also compromises
+security. To solve this, I wrote this little script to store such a text
+file in a secure manner.
 
 = Design choices =
 
