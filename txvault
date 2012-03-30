@@ -4,7 +4,7 @@
 #               GPG-encrypted, Git-versioned repository.
 #
 # Copyright 2012 Sami Hartikainen <sami.a.hartikainen at gmail.com>
-VERSION=0.0.1
+VERSION=0.0.2
 
 BASEDIR=$HOME/.txvault
 DATADIR=$BASEDIR/data
@@ -41,8 +41,7 @@ sanity_gpg_configured() {
 sanity_git_installed() {
     local git_proc=$(which git)
     if [ -z "$git_proc" ]; then
-        out "Git seems to be missing."
-        out "Please install it."
+        out "Git seems to be missing. Please install it."
         exit 1
     fi
 }
@@ -156,12 +155,17 @@ edit_cmd() {
 }
 
 view_cmd() {
+    local use_pager=${1:-1}
     if [ ! -f "$DATAFILE" ]; then
         out "Data file missing."
         out "Perhaps you should run '$0 --edit' to add some secrets?"
         exit 1
     fi
-    gpg --decrypt $DATAFILE 2>/dev/null | less
+    if [ $use_pager -eq 1 ]; then
+        gpg --decrypt $DATAFILE 2>/dev/null | less
+    else
+        gpg --decrypt $DATAFILE 2>/dev/null
+    fi
 }
 
 #
@@ -174,15 +178,17 @@ case "$1" in
     --edit )
         load_config && check_utils && edit_cmd
         ;;
+    --no-pager )
+        load_config && check_utils && view_cmd 0
+        ;;
     -V | --version )
         echo "TxVault $VERSION"
         ;;
     -* )
-        echo "Usage: $0 [--init|--edit]"
+        echo "Usage: $0 [--init|--edit|--no-pager]"
         echo "Without arguments shows the secrets."
         ;;
     * )
         load_config && check_utils && view_cmd
         ;;
 esac
-

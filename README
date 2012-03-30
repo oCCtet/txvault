@@ -27,15 +27,18 @@ implies it's a command-line utility.
 
 The utility 'txvault' supports the following options:
 
-    --init    Initialize the vault in ~/.txvault, including the
-              configuration file and an empty Git repository.
+    --init      Initialize the vault in ~/.txvault, including the
+                configuration file and an empty Git repository.
 
-    --edit    Decrypt the secrets file (or create a new one) and open
-              it in editor (vi by default). Upon exiting the editor the
-              file (if it has changed) is encrypted and commited in Git
-              repository.
+    --edit      Decrypt the secrets file (or create a new one) and open
+                it in editor (vi by default). Upon exiting the editor the
+                file (if it has changed) is encrypted and commited in Git
+                repository.
 
-Without arguments the secrets file is decrypted and viewed with less.
+    --no-pager  Decrypt the secrets file and dump its contents to standard
+                output.
+
+Without arguments the secrets file is decrypted and piped to a pager.
 
 = Dependencies =
 
@@ -54,4 +57,3 @@ Call me paranoid, I won't take offense ;)
 = Copyright =
 
 The txvault script is licensed under the GNU GPLv2.
-
