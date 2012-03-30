@@ -1,0 +1,57 @@
+Who do you trust to hold your passwords?
+
+Modern life relies on a multitude of on-line services. It is a
+recommended practise to use a different user name, or at least a
+different password for each service. Remembering all these becomes
+a burden pretty fast.
+
+Writing them down to a text file is an easy solution, but also
+compromises the security. To solve this, I wrote this little script
+to store such a text file in a secure manner.
+
+= Design choices =
+
+Simplicity and reliability.
+
+To this end, data is stored in a plain text file with no specific
+formatting. You decide! Editing the file can be done with an editor
+of your choice - nano and vi are fine. (Emacs is not so fine, as it
+tends to leave backup files laying around, revealing your secrets.)
+
+The file is encrypted using GnuPG, and stored in a Git repository.
+
+Implementation is a small bash script, open for inspection. This also
+implies it's a command-line utility.
+
+= Functionality =
+
+The utility 'txvault' supports the following options:
+
+    --init    Initialize the vault in ~/.txvault, including the
+              configuration file and an empty Git repository.
+
+    --edit    Decrypt the secrets file (or create a new one) and open
+              it in editor (vi by default). Upon exiting the editor the
+              file (if it has changed) is encrypted and commited in Git
+              repository.
+
+Without arguments the secrets file is decrypted and viewed with less.
+
+= Dependencies =
+
+Requires GnuPG, Git and a few GNU utilites (bash, less, diff and so on;
+any sane Linux system should have these installed).
+
+= But haven't this been done already? =
+
+Web browsers offer to store your login information. Convenient but 
+surely not very safe.
+
+A number of programs, free and commercial, exist for this purpose.
+Can you trust them (to not have bugs etc.)? I decided not to...
+Call me paranoid, I won't take offense ;)
+
+= Copyright =
+
+The txvault script is licensed under the GNU GPLv2.
+

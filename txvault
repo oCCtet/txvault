@@ -1,0 +1,188 @@
+#!/bin/bash
+#
+# txvault.sh -- Text Vault to store a secrets file in
+#               GPG-encrypted, Git-versioned repository.
+#
+# Copyright 2012 Sami Hartikainen <sami.a.hartikainen at gmail.com>
+VERSION=0.0.1
+
+BASEDIR=$HOME/.txvault
+DATADIR=$BASEDIR/data
+DATAFILE=$DATADIR/secrets.txt.gpg
+EDITFILE=$DATADIR/edit-secrets-file
+CONFIG=$BASEDIR/config
+
+umask 0077
+
+#
+# Logging
+#
+log() {
+    if [ -n "$DEBUG" ] && [ "$DEBUG" -eq 1 ]; then
+        echo "$0: $1" >&2
+    fi
+}
+
+out() {
+    echo "$1" >&2
+}
+
+#
+# Sanity checking
+#
+sanity_gpg_configured() {
+    if [ ! -d $HOME/.gnupg ]; then
+        out "GnuPG seems to be missing or uninitialized."
+        out "Please install and/or run it and create a key for yourself."
+        exit 1
+    fi
+}
+
+sanity_git_installed() {
+    local git_proc=$(which git)
+    if [ -z "$git_proc" ]; then
+        out "Git seems to be missing."
+        out "Please install it."
+        exit 1
+    fi
+}
+
+sanity_git_configured() {
+    GIT_USER=$(git config user.name)
+    if [ -z "$GIT_USER" ]; then
+        out "Git user.name not configured."
+        out "Please configure the user name. It should be the same as"
+        out "your GnuPG user ID, unless you configure the GPG_USER in"
+        out "$CONFIG."
+        exit 1
+    fi
+}
+
+sanity_user_id() {
+    if [ -z "$GPG_USER" ]; then
+        GPG_USER="$GIT_USER"
+        log "User ID = $GPG_USER"
+    fi
+}
+
+check_utils() {
+    sanity_gpg_configured
+    sanity_git_installed
+    sanity_git_configured
+    sanity_user_id
+}
+
+check_editor() {
+    local editor=$(which $SECRETS_EDITOR)
+    if [ -z "$editor" ]; then
+        SECRETS_EDITOR=$(which vi)
+        log "Editor = $SECRETS_EDITOR"
+    fi
+}
+
+#
+# Configuration
+#
+load_config() {
+    if [ ! -f $CONFIG ]; then
+        out "$CONFIG: No such file"
+        out "Perhaps you have not run '$0 --init'?"
+        exit 1
+    fi
+    source $CONFIG
+    check_editor
+}
+
+#
+# Utility functions
+#
+write_config_template() {
+cat > $CONFIG <<EOF
+# User configurations for txvault
+
+#DEBUG=1
+#SECRETS_EDITOR=/usr/bin/vi
+#GPG_USER='<user ID>'
+
+EOF
+}
+
+write_secrets_template() {
+cat > $EDITFILE <<EOF
+# This is your file containing secrets. Edit using this editor,
+# save and exit when done. To abort, simply exit without saving.
+#
+# File format does not matter, use whatever formatting you like.
+
+
+EOF
+}
+
+#
+# Operations
+#
+init_cmd() {
+    if [ ! -f $CONFIG ]; then
+        mkdir -p $DATADIR
+        write_config_template
+        cd $DATADIR && git init
+    fi
+}
+
+edit_cmd() {
+    local ok_to_edit=1
+
+    if [ -f $DATAFILE ]; then
+        gpg --output $EDITFILE --decrypt $DATAFILE
+        ok_to_edit=$?
+    else
+        write_secrets_template
+        ok_to_edit=$?
+    fi
+
+    if [ $ok_to_edit -eq 0 ]; then
+        cp $EDITFILE ${EDITFILE}.orig
+        $SECRETS_EDITOR $EDITFILE
+        if [ $? -eq 0 ] && ! diff -q $EDITFILE ${EDITFILE}.orig >/dev/null; then
+            rm -f $DATAFILE
+            gpg --armor --recipient "$GPG_USER" --output $DATAFILE --sign --encrypt $EDITFILE
+            if [ $? -eq 0 ]; then
+                cd $DATADIR && git add ${DATAFILE##*/} && git commit -m'Updated secrets'
+            fi
+        fi
+    fi
+
+    rm -f $EDITFILE ${EDITFILE}.orig
+}
+
+view_cmd() {
+    if [ ! -f "$DATAFILE" ]; then
+        out "Data file missing."
+        out "Perhaps you should run '$0 --edit' to add some secrets?"
+        exit 1
+    fi
+    gpg --decrypt $DATAFILE 2>/dev/null | less
+}
+
+#
+# 'Main'
+#
+case "$1" in
+    --init )
+        check_utils && init_cmd
+        ;;
+    --edit )
+        load_config && check_utils && edit_cmd
+        ;;
+    -V | --version )
+        echo "TxVault $VERSION"
+        ;;
+    -* )
+        echo "Usage: $0 [--init|--edit]"
+        echo "Without arguments shows the secrets."
+        ;;
+    * )
+        load_config && check_utils && view_cmd
+        ;;
+esac
+
